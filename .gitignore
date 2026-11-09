@@ -14,3 +14,6 @@ desktop.ini
 # local artifacts
 *.tgz
 .write-test
+
+# release archives are kept in the repository
+!release-archive/**/*.tgz

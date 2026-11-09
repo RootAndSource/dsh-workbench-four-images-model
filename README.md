@@ -11,7 +11,13 @@
 
 ## 安装
 
-本仓库就是一个 DSH bundle，直接按目录安装：
+方式 A（推荐，npm 包名）：
+
+```
+plugin_manager({ action: "install_bundle", target: "dsh-four-images-workbench" })
+```
+
+方式 B（本地目录 / tgz，绝对路径）：
 
 ```
 plugin_manager({ action: "install_bundle", target: "<本目录的绝对路径>" })

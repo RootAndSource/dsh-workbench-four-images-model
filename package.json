@@ -1,12 +1,19 @@
 {
   "name": "dsh-four-images-workbench",
   "version": "0.2.0",
-  "private": true,
   "description": "四象工作台：四象模型系列插件的统一入口（了解 / 安装 / 状态 / 使用）",
   "keywords": ["dsh", "dsh-bundle", "four-images", "management", "workbench"],
   "license": "MIT",
   "author": "DaiGuobin-CSU <daiguobin@csu.edu.cn>",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RootAndSource/dsh-four-images-model.git"
+  },
+  "homepage": "https://github.com/RootAndSource/dsh-four-images-model#readme",
+  "bugs": {
+    "url": "https://github.com/RootAndSource/dsh-four-images-model/issues"
+  },
   "engines": {
     "dsh": ">=0.2.1-rc.2"
   },
@@ -24,7 +31,8 @@
     "icon.svg",
     "README.md",
     "DESIGN.md",
-    "INTEGRATION.md"
+    "INTEGRATION.md",
+    "LICENSE"
   ],
   "dsh": {
     "bundle": {
