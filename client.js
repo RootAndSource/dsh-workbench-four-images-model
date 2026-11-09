@@ -12,14 +12,14 @@
  *   - 概览推荐动作、系统检查、诊断信息与复制。
  */
 window.__ModuleLoader__.load({
-  id: 'dsh-four-images-workbench',
+  id: 'dsh-workbench-four-images-model',
   factory(require) {
     const React = require('react');
     const h = React.createElement;
 
     const NS = 'fourImagesWorkbench';
     const PANEL_ID = 'four-images';
-    const WORKBENCH_PKG = 'dsh-four-images-workbench';
+    const WORKBENCH_PKG = 'dsh-workbench-four-images-model';
     const AGENT_PKG = 'dsh-preset-four-images-model';
     const SKILLS_PKG = 'dsh-four-images-skills';
     const VERSION = '0.2.0';

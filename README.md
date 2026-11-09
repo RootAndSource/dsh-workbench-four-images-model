@@ -1,4 +1,6 @@
-# 四象工作台（dsh-four-images-workbench）
+# 四象工作台（dsh-workbench-four-images-model）
+
+> 2026-11-09：仓库与 npm 包更名为 `dsh-workbench-four-images-model`（原仓库 `dsh-four-images-model`、原 npm 包 `dsh-four-images-workbench`）。
 
 四象模型系列插件的统一入口：在 DSH 侧栏多一个"四象工作台"页面，用来了解、安装、查看状态、管理并进入四象分析。
 
@@ -14,7 +16,7 @@
 方式 A（推荐，npm 包名）：
 
 ```
-plugin_manager({ action: "install_bundle", target: "dsh-four-images-workbench" })
+plugin_manager({ action: "install_bundle", target: "dsh-workbench-four-images-model" })
 ```
 
 方式 B（本地目录 / tgz，绝对路径）：

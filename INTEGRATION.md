@@ -77,7 +77,7 @@ const PANEL_ID = 'four-images';                      // 侧栏与主面板共用
 ### 4.1 包名与行 id 约定
 
 - 四象系列插件统一前缀：`dsh-four-images-*`；
-- 建议命名：`dsh-four-images-workbench`（工作台）、`dsh-four-images-skills`（执行技能）、未来的 `dsh-four-images-<能力>`（扩展）；
+- 建议命名：工作台 `dsh-workbench-four-images-model`（2026-11-09 由 `dsh-four-images-workbench` 改名）、执行技能 `dsh-four-images-skills`、未来的 `dsh-four-images-<能力>`（扩展）；
 - 已发布的 `dsh-preset-four-images-model` 作为**历史例外**保留，由目录数据显式登记（不改名，避免破坏已发布版本与用户安装）；
 - **行 id 与包名分开**：行 id 用于 patch 覆盖与配置键，稳定即可，不强制等于包名。
 

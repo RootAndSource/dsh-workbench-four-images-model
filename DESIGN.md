@@ -2,6 +2,7 @@
 
 > 状态：设计 + 最小实现。四象工作台 v0.2.0 已安装到当前 DSH profile 并实机确认可用；其余插件仍按路线图推进。
 > 初稿：2026-11-07；更新：2026-11-09
+> 2026-11-09：仓库与 npm 包更名为 `dsh-workbench-four-images-model`（原仓库 `dsh-four-images-model`、原 npm 包 `dsh-four-images-workbench`）。
 > 适用范围：DSH 桌面端 / Web 端（`dsh >= 0.2.1-rc.2`）
 > 读者：前半部分用通用语言写给老师与评审；第六、七章与 `INTEGRATION.md` 是给研发的实现附录。
 
@@ -321,7 +322,7 @@ DSH 的插件体系可以理解为"两层半"：
 
 **旅程 A：全新用户**
 
-1. DSH → 设置 → 插件 → 添加插件 → 输入 `dsh-four-images-workbench`（或选择本地 tgz）→ 安装；
+1. DSH → 设置 → 插件 → 添加插件 → 输入 `dsh-workbench-four-images-model`（或选择本地 tgz）→ 安装；
 2. 侧栏出现四象图标 → 打开工作台 → 概览页引导"推荐安装分析智能体"；
 3. 点"安装"→ 预检 → 确认 → 安装完成，提示"新建会话即可使用"；
 4. 点"用四象模型新建会话"→ 输入管理问题 → 六维报告；
@@ -434,7 +435,7 @@ DSH 的插件体系可以理解为"两层半"：
 
 **约定（目标 v0.2；当前 v0.1.1 仍是 `client.js` 内置清单）：**
 
-1. **命名**：四象系列插件统一使用 `dsh-four-images-*` 包名前缀（工作台 `dsh-four-images-workbench`、执行技能 `dsh-four-images-skills`）；已发布的 `dsh-preset-four-images-model` 作为历史例外，由工作台目录数据显式登记。
+1. **命名**：工作台包名/仓库为 `dsh-workbench-four-images-model`（2026-11-09 由 `dsh-four-images-workbench` 改名）；其余四象插件建议使用 `dsh-four-images-*` 前缀（执行技能 `dsh-four-images-skills`）；已发布的 `dsh-preset-four-images-model` 作为历史例外，由工作台目录数据显式登记。
 2. **目录数据（UI 侧）**：四象插件目录（包名 / kind / order / presetId / entryIds / title / 是否可安装）。v0.2 以**内置数据块**形式随 client bundle 下发（浏览器端无法直接读取包内相对路径的 JSON），修改只动数据段；后续若需运行时维护，可迁移到插件 Config 或 Host 侧注册中心。已实现。
 3. **显示元数据（插件侧，推荐现在做）**：`locale/en.json`、`locale/zh.json` 的 `meta.title/description` 与 `icon.svg`。DSH 插件管理器与工作台（读取 `BundleInfo.meta`）都能直接使用。
 4. **可选身份卡（插件侧，P2 增强）**：`package.json` 的 `dsh.fourImages` 字段（kind / id / title / order）。注意：`pluginManager.listBundles()` **不返回** package.json 自定义字段；要读取它，工作台 Host 半需要解析已装包目录（技术路径未验证），因此 v0.2 不作为依赖。
@@ -453,8 +454,8 @@ DSH 的插件体系可以理解为"两层半"：
 > 关键结论（已核实）：**工作台是"纯客户端 UI 插件"**——所有安装/查询/配置操作都走 DSH 已暴露的官方 Remote 服务（`ctx.remote.*`）与客户端服务（`ctx.configForms` / `ctx.uiWorkspace` / `ctx.layout` / `ctx.locale` / `ctx.theme`），**不需要自建 Host↔Client 私有 RPC**。Host 半只在需要"UI 可编辑配置"时声明 Config。
 
 ```
-dsh-four-images-workbench/          ← 本工作区（v0.2.0 已实现并安装验证）
-├─ package.json                     # dsh.bundle.patch + dsh.client；包名 dsh-four-images-workbench
+dsh-workbench-four-images-model/     ← 本工作区（v0.2.0 已实现并安装验证）
+├─ package.json                     # dsh.bundle.patch + dsh.client；包名 dsh-workbench-four-images-model
 ├─ cordis.patch.yml                 # insert 一条工作台行（Host 半空实现）
 ├─ index.js                         # Host 半：export function apply() {}
 ├─ client.js                        # Client 半：main(key=four-images) + sidebar.panellist(id=four-images) + 四个页签
@@ -479,7 +480,7 @@ dsh-four-images-skills/             ← 待建（按 INTEGRATION.md 的契约）
 
 ```js
 window.__ModuleLoader__.load({
-  id: 'dsh-four-images-workbench',           // 必须等于包名
+  id: 'dsh-workbench-four-images-model',     // 必须等于包名
   factory(require) {
     const React = require('react')
     const h = React.createElement
@@ -752,7 +753,7 @@ window.__ModuleLoader__.load({
 
 | 对象 | 建议 | 说明 |
 |---|---|---|
-| 工作台包名 | `dsh-four-images-workbench` | 与现有 `dsh-preset-four-images-model` 同族 |
+| 工作台包名 | `dsh-workbench-four-images-model` | 与仓库同名；2026-11-09 由 `dsh-four-images-workbench` 改名 |
 | 工作台显示名 | 四象工作台 / Four-Images Workbench | 侧栏与插件页共用 |
 | skills 包名 | `dsh-four-images-skills` | 内容与代码同包 |
 | agent 包 | 保持 `dsh-preset-four-images-model` | 已发布，不改名 |

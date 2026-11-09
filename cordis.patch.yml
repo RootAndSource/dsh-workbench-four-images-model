@@ -6,4 +6,4 @@
 #      `main`（key = four-images）与 `sidebar.panellist`（id = four-images）。
 - insert:
     - id: four-images-workbench
-      name: dsh-four-images-workbench
+      name: dsh-workbench-four-images-model

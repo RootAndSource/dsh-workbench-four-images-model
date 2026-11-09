@@ -5,7 +5,7 @@
 ```
 release-archive/
   0.2.0/
-    dsh-four-images-workbench-0.2.0.tgz
+    dsh-workbench-four-images-model-0.2.0.tgz
     SHA256SUMS.txt
 ```
 
