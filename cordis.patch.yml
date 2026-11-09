@@ -1,0 +1,9 @@
+# 四象工作台（Four-Images Workbench）
+#
+# 本 bundle 只做两件事：
+#   1. 插入一个 Host 插件行（Host 半为空实现，UI 全在 Client 半）；
+#   2. 通过 package.json 的 dsh.client 把 client.js 注册进 Web UI 的
+#      `main`（key = four-images）与 `sidebar.panellist`（id = four-images）。
+- insert:
+    - id: four-images-workbench
+      name: dsh-four-images-workbench
