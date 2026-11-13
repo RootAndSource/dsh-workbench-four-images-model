@@ -7,7 +7,7 @@
 
 ## 0. 一句话
 
-**工作台提供外壳、导航、通用插件管理和扩展点；插件提供自己的页面、卡片、配置与业务逻辑。**
+**工作台提供外壳、导航、插件目录和扩展点；插件提供自己的页面、卡片、配置与业务逻辑。**
 工作台不包含任何具体插件的说明、预设、方法论文案或业务状态。
 
 ---
@@ -34,7 +34,7 @@ my-four-images-plugin/
 └─ icon.svg              # 可选
 ```
 
-- 包名建议含 `four-images`（工作台按包名族做通用插件管理）；推荐 `dsh-four-images-*`；
+- 包名需含 `four-images`（工作台按包名族识别插件）；当前命名约定为 `dsh-<角色>-four-images-model`：工作台 `dsh-workbench-four-images-model`、分析智能体 `dsh-preset-four-images-model`、执行技能 `dsh-skills-four-images-model`；
 - 工作台自己的包名是 `dsh-workbench-four-images-model`；
 - 插件必须能被 DSH 独立安装、启用、停用、卸载；不要求工作台存在。
 
@@ -42,7 +42,7 @@ my-four-images-plugin/
 
 ```json
 {
-  "name": "dsh-four-images-skills",
+  "name": "dsh-skills-four-images-model",
   "version": "0.1.0",
   "type": "module",
   "exports": {
@@ -103,7 +103,6 @@ ctx.inject(['fourImagesNavigation'], (scope) => {
 | `four-images.home.card` | list | root | 首页卡片 |
 | `four-images.home.action` | list | root | 首页主操作 |
 | `four-images.settings.section` | list | root | 设置页的插件配置区 |
-| `four-images.about.section` | list | root | 关于/诊断页的插件补充 |
 | `four-images.toolbar.action` | list | root | 顶栏全局动作 |
 
 插件页面和导航的 key 必须一致；页面可以缺省（工作台会显示"页面暂不可用"）。
@@ -133,7 +132,7 @@ ctx.inject(['fourImagesNavigation'], (scope) => {
 ```js
 // client.js（plain JS，window.__ModuleLoader__ 形式）
 window.__ModuleLoader__.load({
-  id: 'dsh-four-images-skills',
+  id: 'dsh-skills-four-images-model',
   factory(require) {
     const React = require('react')
     const h = React.createElement
@@ -189,7 +188,7 @@ window.__ModuleLoader__.load({
 
 | 内容 | 归属 |
 |---|---|
-| 工作台导航、外壳、通用插件管理 | 工作台 |
+| 工作台导航、外壳、插件目录与状态 | 工作台 |
 | 四象分析说明、分析入口、预设逻辑 | agent 插件 |
 | skills 工作区选择、技能列表、生效状态 | skills 插件 |
 | 案例库、报告导出、行业模板 | 对应扩展插件 |
@@ -207,13 +206,13 @@ window.__ModuleLoader__.load({
 
 ---
 
-## 7. 通用插件管理（工作台提供）
+## 7. 插件目录（工作台提供）
 
-- 识别规则：bundle 名包含 `four-images`（大小写不敏感）且不是工作台自身；
-- 展示：名称、描述、版本、启用状态、插件行状态；
-- 操作：启用/停用、检查更新、更新、卸载、打开 DSH 插件页；
-- 安装：输入 npm 包名或本地绝对路径（目录 / `.tgz`），先预检再安装；
-- 不内置"推荐安装目录"，也不保存插件业务内容。
+- **目录数据**：工作台内置少量目录条目（`dsh-preset-four-images-model`、`dsh-skills-four-images-model`）——包名 + 中文标题 + 一句简介，仅用于陈列，不包含插件详细内容；
+- **状态**：从 DSH 插件清单读取已安装 / 已启用 / 未安装 / 版本；
+- **操作**：复制 npm 包名、打开 DSH 官方插件页；
+- **安装、更新、卸载统一在 DSH 官方插件页完成**，工作台不提供这些按钮；
+- 目录之外、但已安装且包名含 `four-images` 的插件，会出现在"其他已安装的四象插件"区域（同样只提供复制包名与跳转官方插件页）。
 
 ---
 
