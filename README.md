@@ -1,19 +1,29 @@
 # 四象工作台（dsh-workbench-four-images-model）
 
-> 2026-11-09：仓库与 npm 包更名为 `dsh-workbench-four-images-model`（原仓库 `dsh-four-images-model`、原 npm 包 `dsh-four-images-workbench`）。
+四象模型插件的**运行容器**：提供外壳、导航、通用插件管理和扩展点，具体内容由各四象插件补充。
 
-四象模型系列插件的统一入口：在 DSH 侧栏多一个"四象工作台"页面，用来了解、安装、查看状态、管理并进入四象分析。
+> 2026-11-09：仓库与 npm 包由 `dsh-four-images-model` / `dsh-four-images-workbench` 更名为 `dsh-workbench-four-images-model`。
 
-## 它做什么
+## 它是什么
 
-- **概览**：四象插件状态、下一步推荐、系统检查；
-- **插件**：安装 / 卸载 / 启用停用 / 检查更新 / 更新 / 本地目录或 tgz 安装 / 查看插件说明；
-- **使用说明**：四象模型是什么、怎么提问、怎么读报告；
-- **关于**：版本、最近一次操作与日志路径、诊断信息（可复制）、打开 DSH 原生插件页。
+工作台本身**不包含**四象分析说明、预设、技能配置或任何具体插件的业务内容。它只负责：
+
+- **外壳**：左侧二级导航 + 右侧内容区，主题/语言/空状态；
+- **通用插件管理**：识别已安装的四象插件，安装 / 更新 / 启停 / 卸载；
+- **扩展点**：让其他四象插件注册自己的导航页、首页卡片、设置区与顶栏动作；
+- **诊断**：版本、扩展点清单、最近一次安装结果。
+
+具体功能示例：
+
+| 插件 | 在工作台里补充的内容 |
+|---|---|
+| 分析智能体（agent 插件） | "四象分析"页面（六维说明、使用方式、开始分析） |
+| 执行技能（skills 插件） | "执行技能"页面（工作区选择、技能列表、生效状态） |
+| 未来扩展插件 | 自己的页面、卡片、设置或诊断区 |
 
 ## 安装
 
-方式 A（推荐，npm 包名）：
+方式 A（npm 包名）：
 
 ```
 plugin_manager({ action: "install_bundle", target: "dsh-workbench-four-images-model" })
@@ -25,42 +35,38 @@ plugin_manager({ action: "install_bundle", target: "dsh-workbench-four-images-mo
 plugin_manager({ action: "install_bundle", target: "<本目录的绝对路径>" })
 ```
 
-装完后侧栏出现四象图标（四象限圆形）；点击进入工作台。若界面没有立即出现，刷新一次页面。
+装完后 DSH 侧栏出现四象图标；刷新一次页面即可看到新的工作台。
 
-## 当前实现（v0.2.0）
+## 当前版本（v0.3.0）
 
-**已实现并实机验证（安装结果 `applied`、两个客户端插槽 active、开发期冒烟测试通过）：**
+**已实现：**
 
-- 侧栏入口 + 顶层主面板（`main` key=`four-images` + `sidebar.panellist` id=`four-images`）；
-- 四个页签：概览 / 插件 / 使用说明 / 关于；
-- **目录化四象插件**：内置目录数据（等效 `catalog.json`）+ 已装 `dsh-four-images-*` 前缀自动发现，装了就能看见；
-- **真实状态**：`pluginManager.listBundles/listPlugins` + `agentPresets.list`（并用插件行状态兜底判断预设是否就绪）；
-- **插件管理**：安装（先 `inspect` 预检、确认后安装）、卸载、启用/停用、检查更新、更新；
-- **本地安装**：输入绝对目录或 `.tgz` 路径，预检后安装（离线 / 内网场景）；
-- **插件详情**：用 `readBundleDetail` 读取插件自带的 README/详情文档，做安全 Markdown 渲染（标题/列表/代码块/表格/引用）；
-- **开始四象分析**：`uiWorkspace.startSession` 带 `agentPreset: 'four-images-model'`；
-- **诊断**：最近一次操作结果、安装日志路径、状态快照一键复制；
-- zh/en 元数据、图标、跟随宿主的主题 token、模态框 Esc 关闭。
+- 左侧二级导航 + 右侧内容区的壳层；
+- 核心页：首页 / 插件 / 设置 / 关于；
+- 通用插件管理：按 `four-images` 包名族识别、安装（npm / 本地路径，预检 + 确认）、启用/停用、检查更新、更新、卸载；
+- 扩展点：`fourImagesNavigation` 导航服务 + 7 个子插槽（page / home.card / home.action / settings.section / about.section / toolbar.action）；
+- 插件页面按导航 id 动态挂载；插件卸载时导航与页面自动移除；
+- zh/en 文案、宿主主题 token、空状态与响应式布局。
 
-**尚未实现（依赖后续插件或排期）：**
+**尚未包含（由插件或后续版本完成）：**
 
-- 执行技能插件的真实状态与工作区配置面板（等待 `dsh-four-images-skills` 发布；当前是"待发布"占位卡片）；
-- 模型分工配置编辑（当前只读 + 打开 DSH 原生插件页）；
-- 档案库、最近会话列表、扩展位注册中心 / 子插槽。
+- 具体插件内容：agent 插件的页面/卡片、skills 插件的配置页；
+- 工作台自身没有业务设置（设置页用于承载插件配置）；
+- 档案库、插件目录/应用商店。
 
-## 开发期校验
+## 开发与验证
 
 ```
 node scripts/smoke.mjs
 ```
 
-用最小 mock 加载 `client.js`，执行 `apply`、目录映射、预设判断，并渲染四个页签与详情模态框。
+冒烟测试用 mock 渲染壳层、核心页、导航服务与插件页面挂载。
 
-## 四象插件如何接入
+## 插件接入
 
-见 [`INTEGRATION.md`](./INTEGRATION.md)：三类插件（分析智能体 / 执行技能 / 扩展插件）分别要不要改、改哪一边、契约字段是什么。
+见 [INTEGRATION.md](./INTEGRATION.md)：导航服务、插槽清单、注册示例、样式工具类、独立运行保证。
 
 ## 文档
 
-- [DESIGN.md](./DESIGN.md)：完整产品族设计
+- [DESIGN.md](./DESIGN.md)：产品族设计（壳 + 插件内容）
 - [INTEGRATION.md](./INTEGRATION.md)：插件 ↔ 工作台接入契约

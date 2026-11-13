@@ -1,279 +1,241 @@
-# 四象插件 ↔ 四象工作台：接入契约（v0.1 草案）
+# 四象插件 ↔ 四象工作台 接入契约（v0.3）
 
-> 这份文档回答一个问题：**一个插件要让四象工作台正确识别、展示、配置、联动，需要改哪一边、改什么。**
-> 配套：`DESIGN.md`（产品族设计）、`README.md`（工作台安装与现状）。
-
----
-
-## 0. 先给结论
-
-| 插件 | 现在就要改吗 | 改哪边 | 具体改什么 |
-|---|---|---|---|
-| **分析智能体**（`dsh-preset-four-images-model`，已发布） | **不用** | 都不改 | 当前工作台内置了它的包名与预设 id，所以已能识别、安装、开分析 |
-| 想让它更规范、在插件页更好看、可配置 | 可选 | **插件侧为主** | 加 `locale/*.json`（标题/描述/图标）、可选加模型配置页、可选加身份卡 |
-| **执行技能**（`dsh-four-images-skills`，待建） | **要** | **两边都要** | 插件按契约做包名/配置/技能提供者；工作台加"执行技能"卡片与工作区配置面板 |
-| **未来的扩展插件** | 要（首次） | **约定优先：两边各做一次** | 插件写声明；工作台实现"按目录/身份卡渲染"。之后新插件接入 = 插件加声明 + 目录加一条数据 |
-
-一句话：**短期"改插件"或"改 UI"都能凑合；长期最优是把适配沉淀成一份约定——第一次两边各实现一次，之后插件侧按约定写、UI 侧只维护数据。**
+> 工作台是"壳/容器/扩展点"，具体内容由各四象插件实现。
+> 配套：`DESIGN.md`（产品族设计）、`README.md`（工作台安装与能力）。
 
 ---
 
-## 1. 两者的关系：是"约定 + 官方服务"，不是代码依赖
+## 0. 一句话
 
-```
-四象工作台（Client 半）                     DSH 官方服务                 四象插件
-┌──────────────────────┐   ctx.remote.*   ┌──────────────────┐
-│ 概览 / 插件 / 配置     │ ───────────────▶ │ pluginManager     │ ──▶ 安装 / 启用 / 卸载
-│ 使用说明 / 档案(P2)    │                  │ agentPresets      │ ──▶ 预设是否可用
-│                      │                  │ skills            │ ──▶ 技能是否可见
-│                      │   ctx.configForms│ configForms       │ ──▶ volatile 配置
-└──────────────────────┘                  └──────────────────┘
-        │ 不 import 插件代码                        ▲
-        └──────────── 只读目录数据/元数据 ──────────┘
-```
-
-三条原则：
-
-1. **工作台不 import 任何插件代码**：不依赖插件的构建产物、组件、内部实现；
-2. **插件不依赖工作台存在**：没有工作台时，插件仍可单独安装使用；
-3. **适配 = 对齐数据与约定**：包名、目录数据、显示元数据、配置 schema、状态查询；而不是互相调用代码。
+**工作台提供外壳、导航、通用插件管理和扩展点；插件提供自己的页面、卡片、配置与业务逻辑。**
+工作台不包含任何具体插件的说明、预设、方法论文案或业务状态。
 
 ---
 
-## 2. 四层接入深度（决定"改哪边"）
+## 1. 三条原则
 
-| 层级 | 目标 | 插件侧 | UI 侧 | 当前 v0.1.1 |
-|---|---|---|---|---|
-| **L0 被发现** | 工作台知道"有这么一个四象插件" | 包名/行 id 符合约定 | 维护四象插件目录（当前是硬编码常量） | 仅支持内置的两三个包名 |
-| **L1 被描述** | 卡片有正确的标题、描述、图标 | `locale/en.json`、`locale/zh.json` 的 `meta.title/description`，`icon.svg` | 读取 `BundleInfo.meta` 展示（小改） | 未使用 meta，显示包名与版本 |
-| **L2 被配置** | 用户能在工作台（或 DSH 原生配置页）改设置 | 字段声明为 `.volatile()`，或注册 `plugins.row.config` | 加配置面板，经 `configForms` 读写 | 未实现（skills 配置面板待做） |
-| **L3 被嵌入 UI** | 插件自己的卡片/面板出现在工作台里 | client 半向工作台声明的子插槽注册组件 | 工作台先声明子插槽（如 `four-images.extension.card`） | 未实现（需要工作台先支持） |
-
-> L3 说明：DSH 的插槽只能由"拥有该插槽的插件"声明。工作台可以在注册主面板时通过 `children` 声明自己的子插槽，其他插件的 client 半再 `slots.inject` 进去。这是"插件把自己的 UI 放进工作台"的唯一正规方式，需要工作台先支持。
+1. **内容归插件**：四象分析、执行技能、案例库等内容都放在各自插件包里；
+2. **插件可独立**：没有工作台时，插件照常工作；工作台只是可选的容器；
+3. **通过槽与服务适配**：插件用 DSH 官方 `ctx.slots` 注册 UI，用工作台提供的 `fourImagesNavigation` 服务注册导航入口；双方不互相 import 代码。
 
 ---
 
-## 3. 当前 v0.1.1 的实际识别方式（透明说明）
+## 2. 插件包形态
 
-当前工作台在 `client.js` 里写死了：
+一个带 UI 的四象插件建议是一个 bundle 包：
 
-```js
-const AGENT_PKG = 'dsh-preset-four-images-model';   // 分析智能体
-const SKILLS_PKG = 'dsh-four-images-skills';        // 执行技能（未发布）
-const PANEL_ID = 'four-images';                      // 侧栏与主面板共用的 id
-// 预设 id：'four-images-model'
+```
+my-four-images-plugin/
+├─ package.json          # dsh.bundle.patch + dsh.client
+├─ cordis.patch.yml      # 插入 Host 插件行
+├─ index.js              # Host 半（可以空实现）
+├─ client.js             # Client 半（plain JS，window.__ModuleLoader__）
+├─ locale/{en,zh}.json   # meta.title / meta.description
+└─ icon.svg              # 可选
 ```
 
-这意味着：
+- 包名建议含 `four-images`（工作台按包名族做通用插件管理）；推荐 `dsh-four-images-*`；
+- 工作台自己的包名是 `dsh-workbench-four-images-model`；
+- 插件必须能被 DSH 独立安装、启用、停用、卸载；不要求工作台存在。
 
-- 分析智能体**零改动**即可被识别、安装、打开分析会话；
-- 任何**不在常量里**的新插件，工作台看不见；
-- 这是"最小可用版"的取舍。v0.2.0 已把清单收敛为**单一目录数据块**（仍随 client bundle 内置，因为浏览器端无法直接读取包内相对路径的 JSON）；新增插件 = 改数据段或按前缀自动发现。
-
----
-
-## 4. 建议的目标契约（v0.2 起）
-
-### 4.1 包名与行 id 约定
-
-- 四象系列插件统一前缀：`dsh-four-images-*`；
-- 建议命名：工作台 `dsh-workbench-four-images-model`（2026-11-09 由 `dsh-four-images-workbench` 改名）、执行技能 `dsh-four-images-skills`、未来的 `dsh-four-images-<能力>`（扩展）；
-- 已发布的 `dsh-preset-four-images-model` 作为**历史例外**保留，由目录数据显式登记（不改名，避免破坏已发布版本与用户安装）；
-- **行 id 与包名分开**：行 id 用于 patch 覆盖与配置键，稳定即可，不强制等于包名。
-
-### 4.2 显示元数据（插件侧，推荐现在做）
-
-插件加两个文件即可让 DSH 插件页与（未来的）工作台卡片显示正确名称、描述与图标：
-
-```json
-// locale/zh.json
-{ "meta": { "title": "四象模型·DSH智能体", "description": "六维四阶段的管理问题分析与方案生成" } }
-```
-
-```json
-// package.json（节选）
-"exports": {
-  "./locale/*.json": "./locale/*.json",
-  "./icon": "./icon.svg"
-},
-"files": ["locale/*.json", "icon.svg", "..."]
-```
-
-- DSH 会**不激活插件**就读这些元数据（插件页、详情页、列表卡片）；
-- 工作台的 `pluginManager.listBundles()` 返回值里已经带 `meta`（title/description/icon），接上展示只是 UI 侧小改；
-- 图标要求：SVG/PNG/JPEG/WebP，≤256 KiB，放在包内。
-
-### 4.3 四象插件目录（UI 侧）
-
-工作台内置一份**目录数据**（v0.2.0 实现；结构示意）：
-
-```json
-[
-  {
-    "name": "dsh-preset-four-images-model",
-    "kind": "agent",
-    "order": 10,
-    "presetId": "four-images-model",
-    "entryIds": ["preset-four-images"],
-    "installable": true,
-    "title": { "zh": "四象模型·DSH智能体", "en": "Four-Images Analysis Agent" }
-  },
-  {
-    "name": "dsh-four-images-skills",
-    "kind": "skills",
-    "order": 20,
-    "entryIds": ["four-images-skills"],
-    "installable": false,
-    "title": { "zh": "四象执行技能", "en": "Four-Images Execution Skills" }
-  }
-]
-```
-
-- 作用：**未安装**时也能展示"这个插件是什么、装不装"；已安装时与真实状态合并；
-- v0.2.0 的实际形态：数据块随 `client.js` 下发（浏览器不能读包内相对 JSON），同时按 `dsh-four-images-*` 前缀**自动发现**已装插件；
-- 新插件接入当前 = 在数据块加一条（**数据变更**，不是 UI 代码变更）或直接靠前缀被自动发现；若未来需要运行时维护，可迁移到插件 Config 或 Host 侧注册中心（未验证，暂不作为依赖）。
-
-### 4.4 可选身份卡（插件侧，P2 增强）
-
-如果希望"完全零目录维护"，可在 `package.json` 增加：
+`package.json` 关键字段：
 
 ```json
 {
+  "name": "dsh-four-images-skills",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": ["index.js", "client.js", "cordis.patch.yml", "locale/*.json", "icon.svg"],
   "dsh": {
-    "fourImages": {
-      "kind": "agent",
-      "id": "four-images-model",
-      "title": { "zh": "…", "en": "…" },
-      "order": 10
-    }
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": { "platform": "web", "immediately": true }
   }
 }
 ```
 
-- 但注意：DSH 的 `pluginManager.listBundles()` **不返回 package.json 的自定义字段**（只返回名称/版本/meta/rows 等）；
-- 要读取身份卡，工作台需要 Host 半去解析已装包目录，或建立"四象注册中心"服务——**技术路径未验证**，所以 v0.2 不作为依赖；
-- 结论：身份卡是"锦上添花"，v0.2 先用目录数据 + 包名约定 + locale 元数据。
+---
 
-### 4.5 配置契约（L2 的关键）
+## 3. 工作台提供什么
 
-| 需求 | 插件侧怎么做 | UI 侧怎么做 |
-|---|---|---|
-| 配置项要在**工作台里可改** | 字段声明为 `.volatile()`（`ctx.configForms` 只投影 volatile 字段） | 用 `ctx.configForms.get(entryId)` 读写；带 revision，冲突原样报错 |
-| 配置项要在**DSH 插件页**里可改 | 注册 `plugins.row.config` 插槽（键 `<包名>#<行 id>`） | 工作台只在需要时链接/跳转 |
-| 改完需要**重启插件**才生效 | 普通（非 volatile）字段，由插件 Host 半用 `configEditor.edit` 自己写 | 工作台只读展示 + 提示"需要重启/在插件页配置" |
+### 3.1 导航服务 `fourImagesNavigation`
 
-> 经验：**工作台内嵌配置 = 插件暴露 volatile 字段 + UI 做面板**，两边各做一半；不想让工作台代写，就让插件自己提供 `plugins.row.config` 页面，工作台做入口引导。
+工作台的 Client 半提供一个 Cordis 服务，插件用它给自己的页面注册导航入口：
 
-### 4.6 状态契约（可选，但强烈建议）
+```js
+const navigation = ctx.get('fourImagesNavigation')
+const dispose = navigation.add({
+  id: 'skills',                         // 页面 key；插件页面注册时使用同一个 key
+  label: { zh: '执行技能', en: 'Skills' }, // 字符串或 LocalizedText
+  order: 20,                            // 数字，小的在前
+})
+```
 
-工作台能看到的"状态"来自 DSH 官方清单（装没装、是否启用、插件行是否 active）。如果插件有**业务状态**（例如 skills 的"休眠 / 已启用 / 生效工作区"），需要插件自己提供：
+- `add()` 返回 disposer，必须放进 `ctx.effect` 或插件卸载时调用；
+- `id` 不能占用工作台保留页面：`home` / `plugins` / `settings` / `about`；
+- 同一 id 重复注册会替换旧项；
+- 插件卸载时会自动从导航中移除；如果它正是当前页，工作台回退到首页；
+- `select(id)` 可让插件从卡片/动作跳转到某个页面；
+- 服务可能不存在（工作台未安装/未启用），插件必须用可选注入：
 
-- 最轻量：状态本身就是配置字段（`workspaces` 为空 = 休眠），工作台读配置即可推断；
-- 更完整：插件 Host 半提供状态查询（服务/Remote），工作台按需调用——需要 UI 侧实现读取。
+```js
+ctx.inject(['fourImagesNavigation'], (scope) => {
+  ctx.effect(() => scope.fourImagesNavigation.add({
+    id: 'skills',
+    label: { zh: '执行技能', en: 'Skills' },
+    order: 20,
+  }), 'skills: workbench navigation')
+})
+```
+
+### 3.2 子插槽
+
+工作台在它注册主面板时声明了以下子插槽；插件用 `ctx.slots.inject` + `ctx.slots.register` 注册。
+
+| 插槽 | 类型 | scope | 用途 |
+|---|---|---|---|
+| `four-images.page` | keyed（key = 导航 id） | root | 插件的整页内容 |
+| `four-images.home.card` | list | root | 首页卡片 |
+| `four-images.home.action` | list | root | 首页主操作 |
+| `four-images.settings.section` | list | root | 设置页的插件配置区 |
+| `four-images.about.section` | list | root | 关于/诊断页的插件补充 |
+| `four-images.toolbar.action` | list | root | 顶栏全局动作 |
+
+插件页面和导航的 key 必须一致；页面可以缺省（工作台会显示"页面暂不可用"）。
+
+### 3.3 样式工具类
+
+工作台的样式是全局的；插件可以直接复用以下类，保证与工作台一致：
+
+| 类名 | 用途 |
+|---|---|
+| `fi-page` | 页面容器（内边距、最大宽度） |
+| `fi-section` / `fi-section-title` / `fi-section-hint` | 内容分节 |
+| `fi-card` / `fi-card-title` / `fi-card-text` | 卡片 |
+| `fi-btn` / `fi-btn-primary` / `fi-btn-danger` | 按钮 |
+| `fi-input` | 输入框 |
+| `fi-badge` / `fi-badge-ok` / `fi-badge-warn` / `fi-badge-muted` | 状态标签 |
+| `fi-actions` / `fi-meta` / `fi-mono` | 操作行、元信息、等宽文本 |
+| `fi-table` | 简单表格 |
+| `fi-empty` | 空状态 |
+
+插件也可以完全用自己的样式，但只能使用宿主主题 token（`--dsw-alias-*`），并限定在自己的前缀类内。
 
 ---
 
-## 5. 逐插件改动清单
+## 4. 插件侧注册示例
 
-### 5.1 分析智能体（`dsh-preset-four-images-model`）
+```js
+// client.js（plain JS，window.__ModuleLoader__ 形式）
+window.__ModuleLoader__.load({
+  id: 'dsh-four-images-skills',
+  factory(require) {
+    const React = require('react')
+    const h = React.createElement
 
-**现在（工作台 v0.1.1）**：不用改。工作台内置了包名与预设 id，已能：
-- 显示"未安装 / 已安装 / 已启用 / 版本"；
-- 一键安装（先预检再安装，用户确认）；
-- 卸载；
-- "开始四象分析"（`startSession` 带 `agentPreset: 'four-images-model'`）。
+    function SkillsPage(props) {
+      return h('div', { className: 'fi-page' },
+        h('h1', { className: 'fi-card-title' }, '执行技能'),
+        h('div', { className: 'fi-card' }, '插件自己的页面内容与配置…'))
+    }
 
-**建议改（都属插件侧、向后兼容、可选）**：
+    function SkillsCard(props) {
+      return h('div', { className: 'fi-card' },
+        h('h3', { className: 'fi-card-title' }, '执行技能'),
+        h('p', { className: 'fi-card-text' }, '休眠 / 已启用状态由插件自己展示。'))
+    }
 
-1. 加 `locale/en.json`、`locale/zh.json` 与 `icon.svg`（插件页与工作台卡片会更好看）；
-2. 加一个模型配置页（`plugins.row.config`，键 `dsh-preset-four-images-model#subagent-fast` 等），让"模型 id 不存在"时用户能自己改；
-3. 未来加 `dsh.fourImages` 身份卡，供工作台自动识别。
+    return {
+      inject: ['slots', 'locale'],
+      apply(ctx) {
+        ctx.inject(['fourImagesNavigation'], (scope) => {
+          ctx.effect(() => scope.fourImagesNavigation.add({
+            id: 'skills',
+            label: { zh: '执行技能', en: 'Skills' },
+            order: 20,
+          }), 'skills: navigation')
+        })
 
-**硬约束（改了会让工作台失配）**：
+        ctx.slots.inject('four-images.page', () => ctx.slots.register({
+          name: 'four-images.page',
+          key: 'skills',
+          locale: 'fourImagesSkills',
+          inject: () => ({ /* 插件自己的数据/回调 */ }),
+        }, SkillsPage))
 
-- 包名、preset id `four-images-model`、Loader 行 id `preset-four-images` 不要变；
-- 若必须变，需同步更新工作台的目录数据/常量（这就是"改 UI"的那部分）。
+        ctx.slots.inject('four-images.home.card', () => ctx.slots.register({
+          name: 'four-images.home.card',
+          id: 'skills-card',
+          locale: 'fourImagesSkills',
+        }, SkillsCard))
+      },
+    }
+  },
+})
+```
 
-### 5.2 执行技能（`dsh-four-images-skills`，待建）
-
-**插件侧必须做**：
-
-1. 包名与行 id 按约定：`dsh-four-images-skills` / `four-images-skills`；
-2. 配置 schema：`workspaces: string[]`（空 = 休眠）、`groups?: string[]`；希望在工作台里改的字段声明 `.volatile()`；
-3. Host 半注册技能提供者：`ctx.skills.registerProvider()`，`list({ cwd })` 按工作区白名单过滤；不命中返回空（默认休眠、零 token）；
-4. 技能文件放在包内 `skills/<name>/SKILL.md`；关键说明内联进正文（包内 `references/` 的可读性受沙箱影响，未验证）；
-5. 可选：`plugins.row.config` 原生配置页；可选：状态查询接口。
-
-**UI 侧必须做**（v0.2.0 目前是"待发布"占位卡片 + 契约说明；配置面板尚未实现）：
-
-1. 概览/插件页接真实状态：已安装 / 休眠 / 已启用 / 工作区失效；
-2. 配置面板：选择生效工作区（`useWorkspaces` / `directoryPicker`）、技能组开关、保存（`configForms`，volatile）、撤销授权；
-3. "检查生效"：在目标工作区探测技能是否可见；
-4. 配置冲突/保存失败的处理与提示。
-
-**结论：两边都要改**，但按同一份契约各改一半。
-
-### 5.3 扩展插件（未来）
-
-**插件侧（每次新插件）**：
-
-- 包名 `dsh-four-images-*`；
-- `locale` 元数据 + 图标；
-- 可选：`plugins.row.config` 配置页；可选：状态查询；
-- 可选：client 半向工作台的子插槽注册卡片（L3，需要工作台先声明）。
-
-**UI 侧（一次性）**：
-
-- 实现 `catalog.json` 驱动的通用卡片/详情/安装；
-- 可选：声明 `four-images.extension.card` 等子插槽，让扩展插件把自己的 UI 嵌进来；
-- 之后新插件接入 = 插件侧加声明 + 目录加一条数据。
-
----
-
-## 6. 两种路线怎么选
-
-| 路线 | 做法 | 优点 | 缺点 | 适用 |
-|---|---|---|---|---|
-| A. 只改 UI | 在工作台里硬编码适配某个插件 | 最快 | 每加一个插件都要改 UI，不可扩展 | 一次性演示 |
-| B. 只改插件 | 插件声明齐全 | 插件自描述 | 工作台不读声明就看不见，等于没适配 | 不成立（除非 UI 已支持） |
-| C. 约定优先（推荐） | 插件按约定声明；UI 按约定渲染；目录数据维护 | 一次约定、长期复用；插件可独立 | 第一次需要两边各实现一次 | 产品族长期 |
-
-**推荐落地顺序**：
-
-1. v0.2：`catalog.json` + locale 元数据展示 + skills 配置面板（UI 侧一次投入）；
-2. 插件侧同步：agent 加 locale/icon（可选配置页）；skills 按契约实现；
-3. P2：身份卡扫描 / 子插槽 / 注册中心（按验证结果决定）。
+- `ctx.slots.inject` 在插槽不存在时不会执行；工作台卸载后注册自动撤掉；
+- 页面/卡片组件拿不到工作台内部状态，只能拿 DSH 标准 props 和插件自己的 `inject`；
+- 组件内不要写 `document.body`、不要 iframe、不要 require Harness Client 包。
 
 ---
 
-## 7. FAQ
+## 5. 页面、卡片与配置的职责
 
-**Q1：为什么不能只改插件？**
-A：工作台只能通过 DSH 官方服务与自身目录数据"看见"插件；插件加再多元数据，如果 UI 不读取，就不会显示。所以"只改插件"只能让插件在 DSH 原生插件页更好看，不能让它自动进入四象工作台。
+| 内容 | 归属 |
+|---|---|
+| 工作台导航、外壳、通用插件管理 | 工作台 |
+| 四象分析说明、分析入口、预设逻辑 | agent 插件 |
+| skills 工作区选择、技能列表、生效状态 | skills 插件 |
+| 案例库、报告导出、行业模板 | 对应扩展插件 |
+| 插件自己的配置 schema 与持久化 | 插件自己（可用 `plugins.row.config` 提供原生配置页，或在自己的页面里用 `configForms`） |
 
-**Q2：为什么不能只改 UI？**
-A：可以（路线 A），但每来一个新插件都要改 UI；而且配置、状态、技能提供者这些能力只能由插件自己实现，UI 无法替代。
+工作台**不写**插件的业务配置，也不读取插件的业务状态（预设、技能、案例）；它只按包名和 DSH 插件清单做通用管理。
 
-**Q3：能不能让插件直接往工作台里塞 UI？**
-A：可以（L3），但必须由工作台先声明子插槽；插件通过 `slots.inject` 注册。没有声明就无处可塞。
+---
 
-**Q4：改了插件，会不会影响它单独使用？**
-A：不会。约定字段（locale 元数据、volatile 配置、身份卡）都是可选的、向后兼容的；工作台不存在时插件照常工作。
+## 6. 独立运行保证
 
-**Q5：分析智能体到底要不要改？**
-A：当前 v0.1.1 下**不用改**；建议只做"锦上添花"的 L1（locale/icon）与 L2（模型配置页），不改分析内容与预设 id。
+- 没有工作台：`ctx.inject(['fourImagesNavigation'], …)` 不执行，插槽注册不生效，插件自身功能不受影响；
+- 工作台卸载：所有导航项/页面/卡片自动移除；
+- 插件停用/卸载：工作台导航与页面自动消失，当前页回退首页。
 
-**Q6：工作台没装，我的插件还能用吗？**
-A：能。工作台只是门面；插件、预设、技能都独立安装、独立运行。
+---
+
+## 7. 通用插件管理（工作台提供）
+
+- 识别规则：bundle 名包含 `four-images`（大小写不敏感）且不是工作台自身；
+- 展示：名称、描述、版本、启用状态、插件行状态；
+- 操作：启用/停用、检查更新、更新、卸载、打开 DSH 插件页；
+- 安装：输入 npm 包名或本地绝对路径（目录 / `.tgz`），先预检再安装；
+- 不内置"推荐安装目录"，也不保存插件业务内容。
 
 ---
 
 ## 8. 版本与兼容
 
-| 版本 | 工作台能力 | 插件侧要求 |
-|---|---|---|
-| v0.1.x | 内置清单；支持分析智能体的状态/安装/卸载/开分析 | 零改动即可（分析智能体） |
-| **v0.2.x（当前）** | 目录数据 + 前缀自动发现、meta 展示、详情 Markdown、检查更新/更新、本地路径安装、启停、诊断 | 按 4.1/4.2/4.5 声明；新增插件加一条目录数据或靠前缀被发现 |
-| v1.0（远期） | 身份卡扫描 / 子插槽 / 注册中心 | 按最终契约声明 |
+- 当前工作台：`0.3.x`；本契约随工作台 0.x 演进，插槽名与导航服务名在 0.x 内尽量稳定；
+- 保留页面 id：`home` / `plugins` / `settings` / `about`，插件不要占用；
+- 插件页面 id 建议用简短英文（`agent`、`skills`、`cases`）；
+- 若未来引入身份卡/注册中心，会保持向后兼容。
 
-**兼容性原则**：包名、preset id、Loader 行 id 属于"对外接口"，变更即破坏兼容；新增字段一律可选、可缺省。
+---
+
+## 9. FAQ
+
+**Q：为什么分析说明不放在工作台？**
+A：它属于 agent 插件的内容与版本；放在插件里，插件升级时说明同步升级，工作台也不用为每个插件改文案。
+
+**Q：插件一定要有 client 半吗？**
+A：不一定。纯 Host 能力的插件可以没有 UI；需要出现在工作台里时再加 client 半。
+
+**Q：插件能直接改工作台样式吗？**
+A：不能也不应该。用工作台工具类或主题 token；全局样式会污染其他插件。
+
+**Q：工作台没装时插件还能用吗？**
+A：能。导航/插槽注入是可选扩展，不改变插件自身功能。
