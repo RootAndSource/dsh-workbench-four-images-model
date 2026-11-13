@@ -7,6 +7,9 @@ release-archive/
   0.2.0/
     dsh-workbench-four-images-model-0.2.0.tgz
     SHA256SUMS.txt
+  0.3.0/
+    dsh-workbench-four-images-model-0.3.0.tgz
+    SHA256SUMS.txt
 ```
 
 - `.tgz` 由 `npm pack` 生成，与 npm 发布、GitHub Release 附件保持同一份产物；
