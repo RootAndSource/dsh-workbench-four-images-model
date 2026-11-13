@@ -1,8 +1,11 @@
 /**
  * 四象工作台 · 开发期冒烟测试（不随插件发布）
  *
- * 目的：在没有浏览器的情况下，用最小 mock 加载 client.js，执行 apply 与各页签渲染，
- * 尽早发现语法之外的结构性错误（未定义变量、错误的调用形状等）。
+ * 用最小 mock 加载 client.js，执行 apply，验证：
+ *   - 主面板与侧栏插槽注册、子插槽声明；
+ *   - fourImagesNavigation 服务与导航切换；
+ *   - 核心页与插件页的 renderSlot 调用；
+ *   - 侧栏图标渲染。
  *
  * 运行：node scripts/smoke.mjs
  */
@@ -53,72 +56,36 @@ const plugin = entry.factory((name) => {
 if (typeof plugin.apply !== 'function') throw new Error('plugin.apply missing');
 
 /* ------------------------------ mock Host ------------------------------ */
-const state = {
-  bundles: [
-    {
-      name: 'dsh-preset-four-images-model',
-      version: '1.4.10',
-      enabled: true,
-      installed: true,
-      updatable: true,
-      meta: {
-        title: { zh: '四象模型 · DSH 智能体', en: 'Four-Images Agent' },
-        description: { zh: '六维管理分析', en: 'Six-dimension analysis' },
-      },
-      rows: [{ rowId: 'preset-four-images', moduleName: '@deepseek-ai/dsh-agent-preset', entryId: 'include:preset-four-images' }],
-    },
-    {
-      name: 'dsh-four-images-demo-extension',
-      version: '0.1.0',
-      enabled: true,
-      installed: true,
-    },
-  ],
-  plugins: [
-    { entryId: 'include:preset-four-images', patchId: 'preset-four-images', moduleName: '@deepseek-ai/dsh-agent-preset', enabled: true, fiberPhase: 'active' },
-  ],
-  presets: [{ id: 'four-images-model', isDefault: false, name: '四象模型 · DSH 智能体' }],
+const inventory = [
+  {
+    name: 'dsh-four-images-skills',
+    version: '0.1.0',
+    installed: true,
+    enabled: true,
+    rows: [{ entryId: 'include:four-images-skills', patchId: 'four-images-skills', moduleName: 'dsh-four-images-skills', fiberPhase: 'active', enabled: true }],
+    title: '执行技能',
+    description: '可配置的执行能力',
+  },
+];
+const remote = {
+  pluginManager: {
+    listBundles: async () => [],
+    listPlugins: async () => [],
+    inspect: async () => ({ status: 'accepted', name: 'dsh-four-images-skills', version: '0.1.0', kind: 'registry' }),
+    installBundle: async () => ({ application: 'applied' }),
+    removeBundle: async () => ({ application: 'applied' }),
+    setBundleEnabled: async () => ({ application: 'applied' }),
+    listVersions: async () => ({ status: 'listed', versions: [] }),
+    updateBundle: async () => ({ result: { application: 'applied' } }),
+  },
 };
 
 const registrations = {};
-const remote = {
-  pluginManager: {
-    listBundles: async () => state.bundles,
-    listPlugins: async () => state.plugins,
-    inspect: async () => ({ status: 'accepted', name: 'dsh-preset-four-images-model', version: '1.4.10', kind: 'registry' }),
-    installBundle: async () => ({ application: 'applied', stage: 'install' }),
-    removeBundle: async () => ({ application: 'applied', stage: 'remove' }),
-    setBundleEnabled: async () => ({ application: 'applied', stage: 'enable' }),
-    listVersions: async () => ({ status: 'listed', versions: [{ version: '1.4.11' }] }),
-    updateBundle: async () => ({ from: '1.4.10', to: '1.4.11', step: 'install', result: { application: 'applied' } }),
-    readBundleDetail: async () => ({
-      status: 'found',
-      origin: 'readme',
-      markdown: [
-        '# 四象模型 · DSH 智能体',
-        '',
-        '六维四阶段的管理问题分析与方案生成。',
-        '',
-        '## 能力',
-        '',
-        '- 主体 / 环境 / 地位 / 行为 / 才能 / 心态',
-        '- 诊断与方案两段式',
-        '',
-        '| 维度 | 别名 |',
-        '| --- | --- |',
-        '| 主体 | 主 |',
-        '',
-        '```',
-        'const x = 1',
-        '```',
-      ].join('\n'),
-    }),
-  },
-  agentPresets: { list: async () => ({ presets: state.presets }) },
-};
-
+const provided = {};
+const slotCalls = [];
 const ctx = {
   effect(fn) { return fn(); },
+  provide(name, value) { provided[name] = value; return () => { delete provided[name]; }; },
   locale: {
     register: () => () => {},
     bind: () => (key) => key,
@@ -142,7 +109,6 @@ const ctx = {
   },
   remote,
   layout: { selectPanel() {} },
-  uiWorkspace: { startSession() {} },
 };
 
 plugin.apply(ctx);
@@ -152,52 +118,85 @@ const sidebar = registrations['sidebar.panellist:four-images'];
 if (!main) throw new Error('main slot registration missing');
 if (!sidebar) throw new Error('sidebar.panellist registration missing');
 
-const api = main.options.inject();
-const data = await api.loadStatus();
-if (data.items.length < 2) throw new Error('catalog items missing');
-if (!data.items.find((item) => item.kind === 'agent' && item.bundle).bundle) throw new Error('agent detection failed');
-if (data.discovered.length !== 1) throw new Error('prefix discovery failed, got ' + data.discovered.length);
-if (!data.presetAvailable) throw new Error('preset detection failed');
+const children = main.options.children || {};
+const expectedChildren = [
+  'four-images.page',
+  'four-images.home.card',
+  'four-images.home.action',
+  'four-images.settings.section',
+  'four-images.about.section',
+  'four-images.toolbar.action',
+];
+for (const key of expectedChildren) {
+  if (!children[key]) throw new Error('missing child slot declaration: ' + key);
+}
 
-/* --------------------------- render every tab --------------------------- */
-function render(tab, detail) {
-  const queue = [
-    tab,            // tab
-    data,           // data
-    false,          // loading
-    null,           // error
-    '',             // busy
-    null,           // notice
-    detail || null, // detail
-    {},             // updates
-    '',             // localSpec
-    null,           // lastOperation
-  ];
-  React.useState = () => [queue.length ? queue.shift() : undefined, () => {}];
+const nav = provided['fourImagesNavigation'];
+if (!nav || typeof nav.add !== 'function' || typeof nav.select !== 'function') throw new Error('fourImagesNavigation service missing');
+
+const api = main.options.inject();
+if (typeof api.loadInventory !== 'function') throw new Error('inject face missing loadInventory');
+
+/* --------------------------- render helpers --------------------------- */
+function render(active, stateQueue) {
+  if (active) nav.select(active);
+  const queue = stateQueue || [];
+  let index = 0;
+  React.useState = () => {
+    const value = index < queue.length ? queue[index] : undefined;
+    index += 1;
+    return [value, () => {}];
+  };
   const props = {
     ...api,
     t: (key) => key,
-    useRemoteAccess: () => true,
-    loadStatus: async () => data,
+    useNavigation: (selector) => selector(nav.getSnapshot()),
+    renderSlot: (key, owner, opts) => {
+      slotCalls.push({ key, entryKey: opts && opts.entryKey });
+      return { type: 'slot', key, entryKey: opts && opts.entryKey };
+    },
+    loadInventory: async () => inventory,
   };
   return main.component(props);
 }
 
-for (const tab of ['overview', 'plugins', 'guide', 'about']) {
-  const tree = render(tab);
-  if (!tree || tree.type !== 'div') throw new Error('render failed for tab ' + tab);
+const defaultState = [
+  { loading: false, error: null, items: inventory },
+  '', null, '', {}, null,
+];
+
+nav.add({ id: 'agent', label: { zh: '四象分析', en: 'Analysis' }, order: 10 });
+
+const home = render('home', defaultState);
+if (!home || home.type !== 'div') throw new Error('home render failed');
+if (!slotCalls.some((call) => call.key === 'four-images.home.card')) throw new Error('home card slot not rendered');
+
+slotCalls.length = 0;
+const pluginsPage = render('plugins', defaultState);
+if (!pluginsPage || pluginsPage.type !== 'div') throw new Error('plugins render failed');
+
+slotCalls.length = 0;
+const settings = render('settings', structuredClone(defaultState));
+if (!settings || !slotCalls.some((call) => call.key === 'four-images.settings.section')) throw new Error('settings render failed');
+
+slotCalls.length = 0;
+const about = render('about', structuredClone(defaultState));
+if (!about || !slotCalls.some((call) => call.key === 'four-images.about.section')) throw new Error('about render failed');
+
+slotCalls.length = 0;
+const agentPage = render('agent', structuredClone(defaultState));
+if (!agentPage || !slotCalls.some((call) => call.key === 'four-images.page' && call.entryKey === 'agent')) {
+  throw new Error('plugin page render failed');
 }
 
-render('overview', {
-  title: '详情',
-  loading: false,
-  markdown: '# 标题\n\n正文 **加粗** 与 `代码`。\n\n- 一\n- 二\n\n| 维度 | 别名 |\n| --- | --- |\n| 主体 | 主 |\n\n```\ncode\n```',
-});
-render('overview', { title: '详情', loading: false, markdown: '', empty: true });
-render('overview', { title: '详情', loading: false, markdown: '', error: '读取失败' });
+/* service removal should fall back to home */
+const removeAgent = nav.add({ id: 'agent', label: 'Agent' });
+removeAgent();
+nav.select('agent');
+if (nav.getSnapshot().active !== 'home') throw new Error('removed active page should fall back to home');
 
-/* --------------------------- sidebar icon props ------------------------- */
+/* sidebar icon */
 const icon = sidebar.component({ size: 16, active: false });
 if (!icon) throw new Error('sidebar icon render failed');
 
-console.log('smoke-ok: slots, catalog, discovery, preset, tabs, markdown modal, sidebar icon');
+console.log('smoke-ok: shell slots, navigation service, core pages, plugin page, sidebar icon');

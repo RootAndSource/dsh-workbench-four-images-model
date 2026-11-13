@@ -1,7 +1,7 @@
 {
   "name": "dsh-workbench-four-images-model",
-  "version": "0.2.0",
-  "description": "四象工作台：四象模型系列插件的统一入口（了解 / 安装 / 状态 / 使用）",
+  "version": "0.3.0",
+  "description": "四象工作台：四象模型插件的运行容器（外壳 / 导航 / 通用管理 / 扩展点），具体内容由各插件提供",
   "keywords": ["dsh", "dsh-bundle", "four-images", "management", "workbench"],
   "license": "MIT",
   "author": "DaiGuobin-CSU <daiguobin@csu.edu.cn>",
