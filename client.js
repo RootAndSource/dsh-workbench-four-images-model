@@ -5,7 +5,7 @@
  *
  * 工作台负责：
  *   - 外壳：左侧二级导航 + 右侧内容区、主题、语言、空状态；
- *   - 通用管理：按包名族识别四象插件，安装 / 更新 / 启停 / 卸载；
+ *   - 通用管理：按包名族识别插件，展示插件目录与状态，复制包名并跳转 DSH 官方插件页；
  *   - 扩展点：导航服务 + 子插槽，供其他四象插件注册页面、卡片、设置与动作；
  *   - 诊断：版本、扩展点清单、安装结果。
  *
@@ -22,6 +22,32 @@ window.__ModuleLoader__.load({
     const WORKBENCH_PKG = 'dsh-workbench-four-images-model';
     const VERSION = '0.3.0';
     const CORE_PAGES = ['home', 'plugins', 'settings', 'about'];
+    const REPO_URL = 'https://github.com/RootAndSource/dsh-workbench-four-images-model';
+
+    /**
+     * 四象插件目录（只用于插件页陈列：包名 + 标题 + 一句简介）。
+     * 具体内容与配置仍在各插件自己的包里；这里不包含插件详细说明。
+     */
+    const CATALOG = [
+      {
+        packageName: 'dsh-preset-four-images-model',
+        order: 10,
+        title: { zh: '四象模型 · 分析智能体', en: 'Four-Images Analysis Agent' },
+        description: {
+          zh: '六维四阶段的管理问题分析与方案生成，只读、装上即用。',
+          en: 'Six-dimension analysis and planning, read-only, ready once installed.',
+        },
+      },
+      {
+        packageName: 'dsh-skills-four-images-model',
+        order: 20,
+        title: { zh: '四象执行技能', en: 'Four-Images Execution Skills' },
+        description: {
+          zh: '可配置的执行能力，默认休眠；选定生效工作区后使用。',
+          en: 'Configurable execution skills, dormant until a workspace is selected.',
+        },
+      },
+    ];
 
     /* ------------------------------------------------------------------ */
     /* 文案                                                                */
@@ -51,7 +77,7 @@ window.__ModuleLoader__.load({
         installedEmpty: '还没有安装四象插件。安装后会自动出现在这里，并可在左侧导航中增加自己的页面。',
         installTitle: '安装四象插件',
         installHint: '输入 npm 包名或本地绝对路径（目录 / .tgz），先预检再安装。',
-        installPlaceholder: '例如 dsh-four-images-skills 或 D:\\downloads\\plugin.tgz',
+        installPlaceholder: '例如 dsh-skills-four-images-model 或 D:\\downloads\\plugin.tgz',
         installButton: '预检并安装',
         installConfirm: '确认安装？',
         source: '来源',
@@ -107,6 +133,19 @@ window.__ModuleLoader__.load({
         emptyLocal: '请先填写包名或本地路径',
         pluginPageMissing: '该插件的页面暂不可用。',
         pluginPageMissingHint: '插件可能未启用或尚未提供页面内容。',
+        catalogTitle: '四象插件目录',
+        catalogIntro: '这里列出四象插件族。安装、更新、卸载请在 DSH 官方插件页完成。',
+        copyName: '复制插件名',
+        copiedName: '已复制插件名',
+        openOfficial: '打开 DSH 插件页',
+        officialHint: '复制插件名后，在 DSH 官方插件页的“添加插件”里粘贴安装。',
+        otherInstalled: '其他已安装的四象插件',
+        statusNotInstalled: '未安装',
+        starTitle: '支持这个项目',
+        starText: '如果这个项目对你有帮助，欢迎在 GitHub 上点一个 Star ⭐',
+        starButton: '去 GitHub 点 Star',
+        copyRepo: '复制仓库地址',
+        copiedRepo: '仓库地址已复制',
       },
       en: {
         panel: 'Four-Images Workbench',
@@ -132,7 +171,7 @@ window.__ModuleLoader__.load({
         installedEmpty: 'No Four-Images plugins installed yet. They will appear here and can add their own pages to the left navigation.',
         installTitle: 'Install a Four-Images plugin',
         installHint: 'Enter an npm package name or an absolute local directory / .tgz path. It is inspected before installation.',
-        installPlaceholder: 'e.g. dsh-four-images-skills or D:\\downloads\\plugin.tgz',
+        installPlaceholder: 'e.g. dsh-skills-four-images-model or D:\\downloads\\plugin.tgz',
         installButton: 'Inspect & install',
         installConfirm: 'Install now?',
         source: 'Source',
@@ -188,6 +227,19 @@ window.__ModuleLoader__.load({
         emptyLocal: 'Enter a package name or local path first',
         pluginPageMissing: 'This plugin page is unavailable.',
         pluginPageMissingHint: 'The plugin may be disabled or may not provide page content.',
+        catalogTitle: 'Four-Images plugin catalog',
+        catalogIntro: 'Four-Images plugins are listed here. Install, update, or uninstall them on the official DSH Plugins page.',
+        copyName: 'Copy package name',
+        copiedName: 'Package name copied',
+        openOfficial: 'Open DSH Plugins',
+        officialHint: 'Copy the package name, then paste it into “Add plugin” on the official DSH Plugins page.',
+        otherInstalled: 'Other installed Four-Images plugins',
+        statusNotInstalled: 'Not installed',
+        starTitle: 'Support this project',
+        starText: 'If this project helps you, please give it a Star on GitHub ⭐',
+        starButton: 'Star on GitHub',
+        copyRepo: 'Copy repository URL',
+        copiedRepo: 'Repository URL copied',
       },
     };
 
@@ -203,6 +255,7 @@ window.__ModuleLoader__.load({
 .fi-brand-title { font-size: 15px; font-weight: 600; margin: 0; line-height: 1.3; }
 .fi-brand-sub { font-size: 11px; color: var(--dsw-alias-label-tertiary, #6b7280); margin: 1px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fi-header-spacer { flex: 1 1 auto; }
+.fi-catalog { display: flex; flex-direction: column; gap: 12px; }
 .fi-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .fi-toolbar > [data-slot] { display: contents; }
 .fi-body { flex: 1 1 auto; display: flex; min-height: 0; }
@@ -394,11 +447,7 @@ window.__ModuleLoader__.load({
     /* ------------------------------------------------------------------ */
     function WorkbenchShell(props) {
       const [inventory, setInventory] = React.useState({ loading: true, error: null, items: [] });
-      const [busy, setBusy] = React.useState('');
       const [notice, setNotice] = React.useState(null);
-      const [localSpec, setLocalSpec] = React.useState('');
-      const [updates, setUpdates] = React.useState({});
-      const [lastOperation, setLastOperation] = React.useState(null);
 
       const t = (key) => {
         try {
@@ -434,115 +483,47 @@ window.__ModuleLoader__.load({
 
       React.useEffect(() => { load(); }, [load]);
 
-      const remember = (label, result) => {
-        setLastOperation({ label, at: Date.now(), result: result || null });
-      };
-
-      const run = async (label, action) => {
-        setBusy(label);
-        setNotice(null);
+      const copyText = async (text, okText) => {
         try {
-          const message = await action();
-          if (message) setNotice({ kind: 'ok', text: message });
-          await load();
-        } catch (cause) {
-          setNotice({ kind: 'error', text: errorText(cause) });
-        } finally {
-          setBusy('');
-        }
-      };
-
-      const requireConfirm = (text) => {
-        if (typeof window === 'undefined' || typeof window.confirm !== 'function') return true;
-        return window.confirm(text);
-      };
-
-      const install = async (spec) => {
-        const target = String(spec || '').trim();
-        if (!target) { setNotice({ kind: 'error', text: t('emptyLocal') }); return; }
-        await run('install', async () => {
-          const inspected = await props.inspectSpec(target);
-          if (!inspected || inspected.status === 'refused') {
-            throw new Error((inspected && inspected.reason) || '安装预检未通过');
-          }
-          const name = inspected.name || target;
-          const version = inspected.version ? ' v' + inspected.version : '';
-          const source = inspected.registry || inspected.kind || inspected.host || '';
-          if (!requireConfirm(t('installConfirm') + '\n\n' + name + version + (source ? '\n' + source : ''))) {
-            return null;
-          }
-          const result = await props.installSpec(target);
-          remember(t('installButton') + ' ' + name, result);
-          return changeText(result, t);
-        });
-      };
-
-      const remove = async (item) => {
-        if (!requireConfirm(t('removeConfirm') + '\n\n' + item.name)) return;
-        await run('remove:' + item.name, async () => {
-          const result = await props.removeBundle(item.name);
-          remember(t('remove') + ' ' + item.name, result);
-          return changeText(result, t);
-        });
-      };
-
-      const toggle = async (item) => {
-        const enabled = !item.enabled;
-        await run('toggle:' + item.name, async () => {
-          const result = await props.setEnabled(item.name, enabled);
-          remember((enabled ? t('enable') : t('disable')) + ' ' + item.name, result);
-          return changeText(result, t);
-        });
-      };
-
-      const checkUpdates = async (item) => {
-        await run('check:' + item.name, async () => {
-          const result = await props.checkUpdates(item.name);
-          if (!result || result.status === 'refused') {
-            throw new Error((result && result.reason) || '无法检查更新');
-          }
-          const versions = (result.versions || []).map((entry) => entry.version).filter(Boolean);
-          setUpdates((previous) => ({ ...previous, [item.name]: versions }));
-          if (versions.length === 0) return t('latest');
-          return t('updateAvailable') + '：' + versions.slice(0, 3).join(', ');
-        });
-      };
-
-      const update = async (item, version) => {
-        if (!requireConfirm(t('update') + ' ' + item.name + ' → v' + version + ' ?')) return;
-        await run('update:' + item.name, async () => {
-          const result = await props.updateBundle(item.name, version);
-          remember(t('update') + ' ' + item.name + ' → v' + version, result && result.result ? result.result : result);
-          return changeText(result && result.result ? result.result : result, t);
-        });
-      };
-
-      const copyDiagnostics = async () => {
-        const payload = {
-          workbench: VERSION,
-          package: WORKBENCH_PKG,
-          installed: inventory.items.map((item) => ({
-            name: item.name,
-            version: item.version,
-            enabled: item.enabled,
-            rows: item.rows.map((row) => ({ patchId: row.patchId, moduleName: row.moduleName, entryId: row.entryId, fiberPhase: row.fiberPhase, enabled: row.enabled })),
-          })),
-          navigation: (navigation.entries || []).map((entry) => entry.id),
-          lastOperation,
-        };
+          await navigator.clipboard.writeText(text);
+          setNotice({ kind: 'ok', text: okText });
+          return;
+        } catch (ignored) { /* fall through */ }
         try {
-          await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
-          setNotice({ kind: 'ok', text: t('copied') });
-        } catch (cause) {
-          setNotice({ kind: 'error', text: t('copyFailed') + errorText(cause) });
-        }
+          const area = document.createElement('textarea');
+          area.value = text;
+          area.style.position = 'fixed';
+          area.style.opacity = '0';
+          document.body.appendChild(area);
+          area.select();
+          const copied = document.execCommand('copy');
+          area.remove();
+          if (copied) {
+            setNotice({ kind: 'ok', text: okText });
+            return;
+          }
+        } catch (ignored) { /* fall through */ }
+        setNotice({ kind: 'error', text: t('copyFailed') });
       };
 
       const badge = (item) => {
-        if (!item.installed) return h('span', { className: 'fi-badge fi-badge-muted' }, '未安装');
+        if (!item.installed) return h('span', { className: 'fi-badge fi-badge-muted' }, t('statusNotInstalled'));
         if (!item.enabled) return h('span', { className: 'fi-badge fi-badge-warn' }, t('disabledState'));
         return h('span', { className: 'fi-badge fi-badge-ok' }, t('enabledState'));
       };
+
+      const catalogItems = CATALOG.map((entry) => {
+        const bundle = inventory.items.find((item) => item.name === entry.packageName) || null;
+        return {
+          packageName: entry.packageName,
+          title: resolve(entry.title) || entry.packageName,
+          description: resolve(entry.description) || '',
+          installed: !!bundle,
+          enabled: !!(bundle && bundle.enabled),
+          version: bundle ? bundle.version : '',
+        };
+      });
+      const otherInstalled = inventory.items.filter((item) => !CATALOG.some((entry) => entry.packageName === item.name));
 
       const navButton = (id, label) => h('button', {
         key: id,
@@ -593,50 +574,47 @@ window.__ModuleLoader__.load({
       );
 
       const renderPlugins = () => h('div', { className: 'fi-page' },
-        h('h1', { className: 'fi-hero-title' }, t('installedTitle')),
+        h('h1', { className: 'fi-hero-title' }, t('catalogTitle')),
+        h('p', { className: 'fi-section-hint' }, t('catalogIntro')),
         inventory.loading
           ? h('div', { className: 'fi-loading' }, h('span', { className: 'fi-dot' }), t('loading'))
           : inventory.error
             ? h('div', { className: 'fi-notice fi-notice-error' }, inventory.error)
-            : inventory.items.length === 0
-              ? h('div', { className: 'fi-empty' }, t('installedEmpty'))
-              : h('div', null, inventory.items.map((item) => h('div', { className: 'fi-plugin-row', key: item.name },
-                h('div', { className: 'fi-plugin-main' },
-                  h('div', { className: 'fi-plugin-title' },
-                    h('h3', { className: 'fi-plugin-name' }, item.title || item.name),
-                    badge(item)
-                  ),
-                  item.description ? h('p', { className: 'fi-plugin-desc' }, item.description) : null,
-                  h('div', { className: 'fi-meta', style: { marginBottom: '8px' } },
-                    h('span', null, t('package') + '：', h('code', null, item.name)),
-                    h('span', null, t('version') + '：' + (item.version || '—')),
-                    h('span', null, t('statusLabel') + '：' + item.rows.map((row) => (row.fiberPhase || '—')).join(' / '))
-                  ),
-                  h('div', { className: 'fi-actions' },
-                    h('button', { className: 'fi-btn', disabled: !!busy, onClick: () => toggle(item) }, item.enabled ? t('disable') : t('enable')),
-                    h('button', { className: 'fi-btn', disabled: !!busy, onClick: () => checkUpdates(item) }, busy === 'check:' + item.name ? t('checkUpdates') + '…' : t('checkUpdates')),
-                    (updates[item.name] || []).length > 0
-                      ? h('button', { className: 'fi-btn fi-btn-primary', disabled: !!busy, onClick: () => update(item, updates[item.name][0]) }, t('update') + ' → v' + updates[item.name][0])
-                      : null,
-                    h('button', { className: 'fi-btn', onClick: () => { try { props.openPluginsPage(); } catch (ignored) {} } }, t('openPluginPage')),
-                    h('button', { className: 'fi-btn fi-btn-danger', disabled: !!busy, onClick: () => remove(item) }, t('remove'))
-                  )
-                )
-              ))),
-        h('section', { className: 'fi-section' },
-          h('h2', { className: 'fi-section-title' }, t('installTitle')),
-          h('p', { className: 'fi-section-hint' }, t('installHint')),
-          h('div', { className: 'fi-field' },
-            h('input', {
-              className: 'fi-input',
-              value: localSpec,
-              placeholder: t('installPlaceholder'),
-              onChange: (event) => setLocalSpec(event.target.value),
-            }),
-            h('button', { className: 'fi-btn fi-btn-primary', disabled: !!busy, onClick: () => install(localSpec) }, busy === 'install' ? t('busy') : t('installButton'))
-          ),
-          h('div', { className: 'fi-actions', style: { marginTop: '10px' } },
-            h('button', { className: 'fi-btn', onClick: () => { try { props.openPluginsPage(); } catch (ignored) {} } }, t('openPlugins'))
+            : h('div', { className: 'fi-catalog' }, catalogItems.map((item) => h('div', { className: 'fi-card', key: item.packageName },
+              h('div', { className: 'fi-plugin-title' },
+                h('h3', { className: 'fi-card-title' }, item.title),
+                badge(item)
+              ),
+              h('p', { className: 'fi-plugin-desc' }, h('code', { className: 'fi-mono' }, item.packageName)),
+              h('p', { className: 'fi-card-text' }, item.description),
+              h('div', { className: 'fi-actions' },
+                h('button', { className: 'fi-btn', onClick: () => copyText(item.packageName, t('copiedName') + '：' + item.packageName) }, t('copyName')),
+                h('button', { className: 'fi-btn', onClick: () => { try { props.openOfficialPlugins(); } catch (ignored) {} } }, t('openOfficial'))
+              ),
+              item.installed && item.version
+                ? h('p', { className: 'fi-meta', style: { marginTop: '8px', marginBottom: 0 } }, t('version') + '：' + item.version)
+                : null
+            ))),
+        otherInstalled.length > 0
+          ? h('section', { className: 'fi-section' },
+            h('h2', { className: 'fi-section-title' }, t('otherInstalled')),
+            h('div', { className: 'fi-catalog' }, otherInstalled.map((item) => h('div', { className: 'fi-card', key: item.name },
+              h('div', { className: 'fi-plugin-title' },
+                h('h3', { className: 'fi-card-title' }, item.title || item.name),
+                badge({ installed: true, enabled: item.enabled })
+              ),
+              h('p', { className: 'fi-plugin-desc' }, h('code', { className: 'fi-mono' }, item.name)),
+              item.description ? h('p', { className: 'fi-card-text' }, item.description) : null,
+              h('div', { className: 'fi-actions' },
+                h('button', { className: 'fi-btn', onClick: () => copyText(item.name, t('copiedName') + '：' + item.name) }, t('copyName')),
+                h('button', { className: 'fi-btn', onClick: () => { try { props.openOfficialPlugins(); } catch (ignored) {} } }, t('openOfficial'))
+              )
+            ))))
+          : null,
+        h('div', { className: 'fi-notice fi-notice-info', style: { marginTop: '16px' } },
+          t('officialHint'),
+          h('div', { style: { marginTop: '8px' } },
+            h('button', { className: 'fi-btn', onClick: () => { try { props.openOfficialPlugins(); } catch (ignored) {} } }, t('openOfficial'))
           )
         )
       );
@@ -654,35 +632,30 @@ window.__ModuleLoader__.load({
             h('tr', null, h('th', null, t('aboutVersion')), h('td', null, VERSION)),
             h('tr', null, h('th', null, t('aboutPackage')), h('td', null, h('code', null, WORKBENCH_PKG))),
             h('tr', null, h('th', null, t('aboutEngine')), h('td', null, '>= 0.2.1-rc.2')),
-            h('tr', null, h('th', null, t('aboutRepo')), h('td', null, 'github.com/RootAndSource/dsh-workbench-four-images-model'))
+            h('tr', null, h('th', null, t('aboutRepo')), h('td', null, h('code', null, 'RootAndSource/dsh-workbench-four-images-model')))
           )
         ),
         h('section', { className: 'fi-section' },
-          h('h2', { className: 'fi-section-title' }, t('extensionTitle')),
-          h('p', { className: 'fi-section-hint' }, t('extensionIntro')),
-          h('ul', { style: { margin: '0', paddingLeft: '20px', fontSize: '13px', lineHeight: '1.9', color: 'var(--dsw-alias-label-secondary, #4b5563)' } },
-            h('li', null, t('extNav')),
-            h('li', null, t('extPage')),
-            h('li', null, t('extHomeCard')),
-            h('li', null, t('extHomeAction')),
-            h('li', null, t('extSettings')),
-            h('li', null, t('extAbout')),
-            h('li', null, t('extToolbar'))
-          )
-        ),
-        h('div', { className: 'fi-list-slot' }, props.renderSlot('four-images.about.section', {})),
-        h('section', { className: 'fi-section' },
-          h('h2', { className: 'fi-section-title' }, t('diagnostics')),
-          lastOperation
-            ? h('div', null,
-              h('p', { className: 'fi-mono' }, lastOperation.label + ' · ' + new Date(lastOperation.at).toLocaleString()),
-              h('pre', { className: 'fi-code-block' }, JSON.stringify(lastOperation.result, null, 2)))
-            : h('p', { className: 'fi-section-hint' }, t('noOperation')),
-          h('div', { className: 'fi-actions', style: { marginTop: '10px' } },
-            h('button', { className: 'fi-btn', onClick: load }, t('refresh')),
-            h('button', { className: 'fi-btn', onClick: copyDiagnostics }, t('copyDiagnostics')),
-            h('button', { className: 'fi-btn', onClick: () => { try { props.openPluginsPage(); } catch (ignored) {} } }, t('openPlugins'))
-          )
+          h('h2', { className: 'fi-section-title' }, t('starTitle')),
+          h('p', { className: 'fi-section-hint' }, t('starText')),
+          h('div', { className: 'fi-actions' },
+            h('a', {
+              className: 'fi-btn fi-btn-primary',
+              href: REPO_URL,
+              target: '_blank',
+              rel: 'noopener noreferrer',
+              onClick: (event) => {
+                try {
+                  if (typeof window !== 'undefined' && window.dshDesktop && typeof window.dshDesktop.openExternal === 'function') {
+                    window.dshDesktop.openExternal(REPO_URL);
+                    event.preventDefault();
+                  }
+                } catch (ignored) { /* fall through to the anchor */ }
+              },
+            }, t('starButton')),
+            h('button', { className: 'fi-btn', onClick: () => copyText(REPO_URL, t('copiedRepo')) }, t('copyRepo'))
+          ),
+          h('p', { className: 'fi-mono', style: { marginTop: '10px', color: 'var(--dsw-alias-label-tertiary, #6b7280)' } }, REPO_URL)
         )
       );
 
@@ -811,6 +784,17 @@ window.__ModuleLoader__.load({
             .sort((a, b) => a.name.localeCompare(b.name));
         };
 
+        const openOfficialPlugins = () => {
+          try {
+            const navigationService = ctx.get('pluginNavigation');
+            if (navigationService && typeof navigationService.openList === 'function') {
+              navigationService.openList();
+              return;
+            }
+          } catch (ignored) { /* fall back */ }
+          try { ctx.layout.selectPanel('plugins'); } catch (ignored) { /* panel may be registering */ }
+        };
+
         ctx.remoteAccess.whenAccess('pluginManager/listBundles', function* () {
           yield ctx.slots.inject('main', () => ctx.slots.register({
             name: 'main',
@@ -821,21 +805,14 @@ window.__ModuleLoader__.load({
               'four-images.home.card': { kind: 'list', scope: 'root' },
               'four-images.home.action': { kind: 'list', scope: 'root' },
               'four-images.settings.section': { kind: 'list', scope: 'root' },
-              'four-images.about.section': { kind: 'list', scope: 'root' },
               'four-images.toolbar.action': { kind: 'list', scope: 'root' },
             },
             inject: () => ({
               hooks: { navigation },
               resolveText,
               loadInventory,
-              inspectSpec: (spec) => remoteValue(() => ctx.remote.pluginManager.inspect(spec)),
-              installSpec: (spec) => remoteValue(() => ctx.remote.pluginManager.installBundle(spec, { enabled: true })),
-              removeBundle: (name) => remoteValue(() => ctx.remote.pluginManager.removeBundle(name)),
-              setEnabled: (name, enabled) => remoteValue(() => ctx.remote.pluginManager.setBundleEnabled(name, enabled)),
-              checkUpdates: (name) => remoteValue(() => ctx.remote.pluginManager.listVersions(name)),
-              updateBundle: (name, version) => remoteValue(() => ctx.remote.pluginManager.updateBundle(name, version)),
               selectPage: (id) => navigation.select(id),
-              openPluginsPage: () => { try { ctx.layout.selectPanel('plugins'); } catch (ignored) {} },
+              openOfficialPlugins,
             }),
           }, WorkbenchShell));
           yield ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({

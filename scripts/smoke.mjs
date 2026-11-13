@@ -58,11 +58,11 @@ if (typeof plugin.apply !== 'function') throw new Error('plugin.apply missing');
 /* ------------------------------ mock Host ------------------------------ */
 const inventory = [
   {
-    name: 'dsh-four-images-skills',
+    name: 'dsh-skills-four-images-model',
     version: '0.1.0',
     installed: true,
     enabled: true,
-    rows: [{ entryId: 'include:four-images-skills', patchId: 'four-images-skills', moduleName: 'dsh-four-images-skills', fiberPhase: 'active', enabled: true }],
+    rows: [{ entryId: 'include:skills-four-images', patchId: 'skills-four-images', moduleName: 'dsh-skills-four-images-model', fiberPhase: 'active', enabled: true }],
     title: '执行技能',
     description: '可配置的执行能力',
   },
@@ -71,7 +71,7 @@ const remote = {
   pluginManager: {
     listBundles: async () => [],
     listPlugins: async () => [],
-    inspect: async () => ({ status: 'accepted', name: 'dsh-four-images-skills', version: '0.1.0', kind: 'registry' }),
+    inspect: async () => ({ status: 'accepted', name: 'dsh-skills-four-images-model', version: '0.1.0', kind: 'registry' }),
     installBundle: async () => ({ application: 'applied' }),
     removeBundle: async () => ({ application: 'applied' }),
     setBundleEnabled: async () => ({ application: 'applied' }),
@@ -124,7 +124,6 @@ const expectedChildren = [
   'four-images.home.card',
   'four-images.home.action',
   'four-images.settings.section',
-  'four-images.about.section',
   'four-images.toolbar.action',
 ];
 for (const key of expectedChildren) {
@@ -162,7 +161,7 @@ function render(active, stateQueue) {
 
 const defaultState = [
   { loading: false, error: null, items: inventory },
-  '', null, '', {}, null,
+  null,
 ];
 
 nav.add({ id: 'agent', label: { zh: '四象分析', en: 'Analysis' }, order: 10 });
@@ -181,7 +180,7 @@ if (!settings || !slotCalls.some((call) => call.key === 'four-images.settings.se
 
 slotCalls.length = 0;
 const about = render('about', structuredClone(defaultState));
-if (!about || !slotCalls.some((call) => call.key === 'four-images.about.section')) throw new Error('about render failed');
+if (!about || about.type !== 'div') throw new Error('about render failed');
 
 slotCalls.length = 0;
 const agentPage = render('agent', structuredClone(defaultState));
